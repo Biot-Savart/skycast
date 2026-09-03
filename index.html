@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Skycast — an interactive weather dashboard powered by Open-Meteo. No API keys required." />
+  <title>Skycast · Interactive Weather</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='%23ffd166'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css?v=3" />
+</head>
+<body data-cond="clear-day">
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <div id="app">
+    <header>
+      <div class="brand" aria-label="Skycast">
+        <svg viewBox="0 0 64 64" class="brand-logo" aria-hidden="true">
+          <circle cx="26" cy="24" r="12" fill="#ffd166" />
+          <path d="M46 44a9 9 0 0 0-.6-18 13 13 0 0 0-24.4 3A8.5 8.5 0 0 0 22 44h24z" fill="#cde9ff" stroke="#9fc9e8" stroke-width="2" />
+        </svg>
+        <span>Skycast</span>
+      </div>
+
+      <div class="search-wrap" id="search-wrap">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z" fill="currentColor"/></svg>
+        <input id="search-input" type="search" placeholder="Search any city…  ( / )" autocomplete="off" spellcheck="false" aria-label="Search for a city" />
+        <ul id="search-results" hidden role="listbox" aria-label="Search results"></ul>
+      </div>
+
+      <div class="header-actions">
+        <button id="locate-btn" class="icon-btn" title="Use my location" aria-label="Use my location">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>
+        </button>
+
+        <div class="pop-wrap">
+          <button id="units-btn" class="icon-btn" title="Units" aria-label="Change units" aria-haspopup="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v4H4zM4 10h16v4H4zM4 16h16v4H4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <div id="units-pop" class="pop" hidden>
+            <div class="unit-group">
+              <span>Temperature</span>
+              <div class="seg" data-group="temp">
+                <button data-value="c">°C</button><button data-value="f">°F</button>
+              </div>
+            </div>
+            <div class="unit-group">
+              <span>Wind</span>
+              <div class="seg" data-group="wind">
+                <button data-value="kmh">km/h</button><button data-value="mph">mph</button><button data-value="ms">m/s</button>
+              </div>
+            </div>
+            <div class="unit-group">
+              <span>Rain</span>
+              <div class="seg" data-group="precip">
+                <button data-value="mm">mm</button><button data-value="in">in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pop-wrap">
+          <button id="saved-btn" class="icon-btn" title="Saved places" aria-label="Saved places" aria-haspopup="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8L12 3z" fill="currentColor"/></svg>
+          </button>
+          <div id="saved-pop" class="pop" hidden>
+            <button id="save-current" class="btn full">☆ Save current location</button>
+            <div id="saved-list"></div>
+            <button id="compare-btn" class="btn full ghost">⇄ Compare saved places</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section id="hero" class="card" aria-label="Current weather">
+        <div id="hero-skeleton" class="skeleton skeleton-hero"></div>
+        <div id="hero-body" hidden>
+          <div class="hero-left">
+            <div class="hero-loc">
+              <h1 id="loc-name">—</h1>
+              <p id="loc-meta">—</p>
+            </div>
+            <div id="cur-icon" class="cur-icon" role="img" aria-label="Current conditions"></div>
+          </div>
+          <div class="hero-mid">
+            <div id="cur-temp" class="cur-temp">—</div>
+            <div id="cur-desc" class="cur-desc">—</div>
+            <div id="cur-feels" class="cur-feels"></div>
+          </div>
+          <div class="hero-right">
+            <div id="loc-time" class="loc-time">—</div>
+            <div id="cur-hilo" class="cur-hilo"></div>
+            <div id="cur-stats" class="cur-stats"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOURLY -->
+      <section id="hourly-card" class="card">
+        <div class="card-head">
+          <h2>Next 24 hours</h2>
+          <div class="legend">
+            <span><i class="dot day"></i>Day</span>
+            <span><i class="dot night"></i>Night</span>
+          </div>
+        </div>
+        <div id="hourly-strip" class="hourly-strip" role="list"></div>
+        <div class="chart-wrap">
+          <canvas id="hourly-chart" role="img" aria-label="Temperature over the next 24 hours"></canvas>
+          <div id="hourly-tip" class="chart-tip" hidden></div>
+        </div>
+      </section>
+
+      <!-- NOWCAST -->
+      <section id="nowcast-card" class="card">
+        <div class="card-head"><h2>Precipitation nowcast</h2><span class="sub">next 12 hours · 15-min steps</span></div>
+        <div class="chart-wrap small">
+          <canvas id="nowcast-chart" role="img" aria-label="Precipitation nowcast"></canvas>
+          <div id="nowcast-tip" class="chart-tip" hidden></div>
+        </div>
+        <p id="nowcast-summary" class="nowcast-summary"></p>
+      </section>
+
+      <!-- DAILY -->
+      <section id="daily-card" class="card">
+        <div class="card-head"><h2>16-day forecast</h2><span class="sub">click a day for details</span></div>
+        <div id="daily-grid"></div>
+        <div id="day-details" hidden>
+          <h3 id="day-details-title"></h3>
+          <div class="chart-wrap small">
+            <canvas id="day-chart" role="img" aria-label="Hourly temperature for the selected day"></canvas>
+          </div>
+          <div id="day-details-stats" class="stat-row"></div>
+        </div>
+      </section>
+
+      <!-- CURRENT DETAILS -->
+      <section id="details-card" class="card">
+        <div class="card-head"><h2>Right now</h2></div>
+        <div id="details-grid" class="details-grid"></div>
+      </section>
+
+      <!-- SUN & MOON -->
+      <section id="sunmoon-card" class="card">
+        <div class="card-head"><h2>Sun &amp; moon</h2><span id="sunmoon-sub" class="sub"></span></div>
+        <div class="sunmoon-grid">
+          <div>
+            <div id="sun-arc-wrap"></div>
+            <div id="sun-times" class="stat-row"></div>
+          </div>
+          <div id="moon-wrap" class="moon-wrap"></div>
+        </div>
+      </section>
+
+      <!-- AIR QUALITY -->
+      <section id="aqi-card" class="card">
+        <div class="card-head"><h2>Air quality</h2><span class="sub">European AQI</span></div>
+        <div class="aqi-grid">
+          <div id="aqi-main"></div>
+          <div id="aqi-pollutants"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+      Geocoding by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+      No API keys required — free for everyone.
+    </footer>
+  </div>
+
+  <!-- COMPARE MODAL -->
+  <div id="compare-modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Compare saved places">
+      <div class="modal-head">
+        <h2>Compare saved places</h2>
+        <button id="compare-close" class="icon-btn" aria-label="Close">✕</button>
+      </div>
+      <div id="compare-body"></div>
+    </div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js?v=3"></script>
+</body>
+</html>
