@@ -2,6 +2,8 @@
 
 A feature-rich, fully interactive weather website in **100% vanilla JavaScript** — no frameworks, no build step, no API keys. Live data comes from the free [Open-Meteo](https://open-meteo.com/) APIs (forecast, geocoding, and air quality).
 
+**▶ Live demo: [biot-savart.github.io/skycast](https://biot-savart.github.io/skycast/)**
+
 ## Features
 
 - 🔍 **City search** with live autocomplete, full keyboard navigation (arrows / Enter / Esc, `/` to focus)
@@ -29,6 +31,10 @@ python -m http.server 8000
 ```
 
 (Opening `index.html` directly from disk won't work because the app uses ES modules, which require an HTTP origin.)
+
+## Deploy on GitHub Pages
+
+This repo ships with a ready [.github/workflows/pages.yml](.github/workflows/pages.yml). Pushing to `main` triggers the official zero-build Pages deploy — the site goes live at `https://<user>.github.io/<repo>/` automatically. This repo is deployed at [biot-savart.github.io/skycast](https://biot-savart.github.io/skycast/).
 
 ## Deploy on GitLab Pages
 
@@ -64,4 +70,7 @@ js/views.js         — rendering for every section
 js/main.js          — controller: search, geolocation, events, boot
 ```
 
-Data by [Open-Meteo](https://open-meteo.com/) (CC-BY 4.0). No API keys required — free for everyone.
+## Credits
+
+- Weather, geocoding & air-quality data by [Open-Meteo](https://open-meteo.com/) (CC-BY 4.0) — no API keys required, free for everyone
+- Built with **GLM** (`zai-org/GLM-5.3-Flash`) by [Z.ai](https://huggingface.co/zai-org), running locally in [LM Studio](https://lmstudio.ai)
